@@ -25,7 +25,6 @@ package sc.fiji.snt;
 import graphics.scenery.*;
 import graphics.scenery.attribute.material.DefaultMaterial;
 import graphics.scenery.attribute.material.Material;
-import ij.IJ;
 import net.imagej.ImageJ;
 
 import org.jetbrains.annotations.NotNull;
@@ -46,7 +45,6 @@ import sc.iview.node.Line3D;
 import java.awt.*;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
-import java.awt.image.BufferedImage;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -114,7 +112,6 @@ public class SciViewSNT {
 	protected SciViewSNT(final SNT snt) throws NoClassDefFoundError {
 		this(snt.getContext());
 		this.snt = snt;
-		if (snt.getUI() != null) snt.getUI().setSciViewSNT(this);
 		initSciView();
 	}
 
@@ -483,19 +480,11 @@ public class SciViewSNT {
 	/* IDE debug method */
 	public static void main(final String[] args) throws InterruptedException {
 		SceneryBase.xinitThreads();
-
-		//GuiUtils.setSystemLookAndFeel();
 		final ImageJ ij = new ImageJ();
-
-		Image icon = new BufferedImage(64, 64, BufferedImage.TYPE_INT_RGB);
-		IJ.getInstance().setIconImage(icon);
-
-		//ij.ui().showUI();
+		ij.ui().showUI();
 		final SNTService sntService = ij.context().getService(SNTService.class);
 		final SciViewSNT sciViewSNT = sntService.getOrCreateSciViewSNT();
-
 		sciViewSNT.sciView.waitForSceneInitialisation();
-
 		final Tree tree = sntService.demoTree("fractal");
 		tree.setColor(Colors.RED);
 //		final Tree tree2 = Tree.fromFile("/home/tferr/code/OP_1/OP_1.swc");
