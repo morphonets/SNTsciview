@@ -48,12 +48,10 @@ import java.awt.event.WindowEvent;
 import java.util.List;
 import java.util.stream.Collectors;
 
-import javax.swing.SwingUtilities;
-
 import java.util.*;
 
 /**
- * Bridges SNT to {@link SciView}, allowing {@link Tree}s to be rendered as scenery objects
+ * Bridges SNT to {@link SciView}, allowing SNT Trees to be rendered as scenery objects
  *
  * @author Kyle Harrington
  * @author Tiago Ferreira
@@ -63,6 +61,9 @@ public class SciViewSNT {
 
 	@Parameter
 	private SciViewService sciViewService;
+
+	@Parameter
+	private SNTService sntService;
 
 	private SNT snt;
 	private SciView sciView;
@@ -74,21 +75,21 @@ public class SciViewSNT {
 	 *
 	 * @param context the SciJava application context providing the services
 	 *                required by the class
-	 * @throws NoClassDefFoundError if SciView/scenery are not available
+	 * @throws NoClassDefFoundError if sciview/scenery are not available
 	 * @throws NullContextException   If context is null
 	 */
 	public SciViewSNT(final Context context) throws NoClassDefFoundError {
 		if (!EnableSciViewUpdateSiteCmd.isSciViewAvailable()) {
 			// If dependencies are missing, warn users politely
 			throw new NoClassDefFoundError(
-					"SciView is not available. Please see https://imagej.net/plugins/snt/#installation for details");
+					"sciview is not available. Please see https://imagej.net/plugins/snt/#installation for details");
 		}
 		if (context == null) throw new NullContextException();
 		context.inject(this);
 		plottedTrees = new TreeMap<String,ShapeTree>();
         try {
             sciView = sciViewService.getOrCreateActiveSciView();
-        } catch (Exception e) {
+        } catch (final Exception e) {
             e.printStackTrace();
         }
         snt = null;
@@ -109,7 +110,13 @@ public class SciViewSNT {
 		snt = null;
 	}
 
-	protected SciViewSNT(final SNT snt) throws NoClassDefFoundError {
+	/**
+	 * Instantiates SciViewSNT and associates it with a running SNT instance
+	 *
+	 * @param snt the SNT instance
+	 * @throws NoClassDefFoundError if sciview/scenery are not available
+	 */
+	public SciViewSNT(final SNT snt) throws NoClassDefFoundError {
 		this(snt.getContext());
 		this.snt = snt;
 		initSciView();
@@ -117,11 +124,11 @@ public class SciViewSNT {
 
 	private void initSciView() {
 		if (sciView == null) {
-			if (SwingUtilities.isEventDispatchThread())
-				SNTUtils.log("Initializing active SciView from EDT");
 			try {
-				setSciView(sciViewService.getOrCreateActiveSciView());
-			} catch (Exception e) {
+				sciView = sciViewService.getOrCreateActiveSciView();
+				sciView.waitForSceneInitialisation();
+				setSciView(sciView);
+			} catch (final Exception e) {
 				e.printStackTrace();
 			}
 		}
@@ -154,6 +161,11 @@ public class SciViewSNT {
 				public void windowClosing(final WindowEvent e) {
 					nullifySciView();
 				}
+				@Override
+				public void windowClosed(final WindowEvent e) {
+					nullifySciView();
+				}
+
 			});
 			this.sciView.getFloor().setVisible(false);
 			if (snt != null) syncPathManagerList();
@@ -161,11 +173,11 @@ public class SciViewSNT {
 	}
 
 	private void nullifySciView() {
-		if (sciView == null) return;
-		sciView.dispose(); // unnecessary?
-		sciView.close();
+		if (snt != null && snt.getUI() != null) snt.getUI().setSciViewSNT(null); //FIXME: for refractory after update
+		if (sciView != null && !sciView.isClosed()) {
+			sciView.closeWindow();
+		}
 		sciView = null;
-		if (snt != null && snt.getUI() != null) snt.getUI().setSciViewSNT(null);
 	}
 
 	private String makeUniqueKey(final Map<String, ?> map, final String key) {
@@ -250,7 +262,7 @@ public class SciViewSNT {
 	 *         successful
 	 * @throws IllegalArgumentException if SNT is not running
 	 */
-	protected boolean syncPathManagerList() {
+	public boolean syncPathManagerList() {
 		if (snt == null)
 			throw new IllegalArgumentException("Unknown SNT instance. SNT not running?");
 		if (snt.getPathAndFillManager().size() == 0)
@@ -259,11 +271,10 @@ public class SciViewSNT {
 		if (sciView == null || sciView.isClosed()) {
 			// If we cannot sync, let's ensure the UI is not in some unexpected state
 			nullifySciView();
-			if (snt.getUI() != null) snt.getUI().setSciViewSNT(null);
 			return false;
 		}
 
-		final Tree tree = new Tree(snt.getPathAndFillManager().getPathsFiltered());
+		final Tree tree = sntService.getTree();
 		tree.setLabel(PATH_MANAGER_TREE_LABEL);
 		if (plottedTrees.containsKey(PATH_MANAGER_TREE_LABEL)) {
 			// If the "Path Manager" Node exists, remove it so that it can be replaced
@@ -404,7 +415,7 @@ public class SciViewSNT {
 			//sciView.surroundLighting();
 		}
 
-		private boolean validSoma(Tree tree) {
+		private boolean validSoma(final Tree tree) {
 			// FIXME: Copied from Tree until we can update SNT dependency version
 			final List<Path> somas = tree.list().stream().filter(path -> Path.SWC_SOMA == path.getSWCType())
 					.collect(Collectors.toList());
@@ -483,16 +494,9 @@ public class SciViewSNT {
 		final ImageJ ij = new ImageJ();
 		ij.ui().showUI();
 		final SNTService sntService = ij.context().getService(SNTService.class);
-		final SciViewSNT sciViewSNT = sntService.getOrCreateSciViewSNT();
-		sciViewSNT.sciView.waitForSceneInitialisation();
+		final SciViewSNT sciViewSNT = (SciViewSNT) sntService.getOrCreateSciViewSNT();
 		final Tree tree = sntService.demoTree("fractal");
 		tree.setColor(Colors.RED);
-//		final Tree tree2 = Tree.fromFile("/home/tferr/code/OP_1/OP_1.swc");
-//		tree2.setColor(Colors.YELLOW);
-//		sciViewSNT.addTree(tree2);
-		//sciViewSNT.getSciView().centerOnScene();
-		sciViewSNT.add(tree, "lol");
-		//sciViewSNT.getSciView().addVolume(sntService.demoTreeDataset());
-//		sciViewSNT.getSciView().centerOnNode(sciViewSNT.getTreeAsSceneryNode(tree2));
+		sciViewSNT.add(tree, tree.getLabel());
 	}
 }
