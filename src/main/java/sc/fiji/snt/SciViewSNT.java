@@ -502,7 +502,8 @@ public class SciViewSNT {
 		@NotNull
 		@Override
 		public String getName() {
-			return tree.getLabel();
+			final String name = tree.getLabel();
+			return (name==null) ? "ShapeTree" : name;
 		}
 	}
 
