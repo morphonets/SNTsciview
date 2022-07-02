@@ -135,6 +135,15 @@ public class SciViewSNT {
 	}
 
 	/**
+	 *
+	 * @return the reference to this SciViewSNT instance.
+	 */
+	public SciViewSNT getSciViewSNT() {
+		initSciView();
+		return this;
+	}
+
+	/**
 	 * Gets the SciView instance currently in use.
 	 *
 	 * @return the SciView instance. It is never null: A new instance is created if
