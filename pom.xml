@@ -113,12 +113,37 @@
 			<url>https://maven.scijava.org/content/groups/public</url>
 		</repository>
 	</repositories>
-
 	<dependencies>
 		<dependency>
 			<groupId>sc.iview</groupId>
 			<artifactId>sciview</artifactId>
 			<version>${sciview.version}</version>
+			<exclusions>
+				<exclusion>
+					<groupId>org.biojava</groupId>
+					<artifactId>biojava-core</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.biojava</groupId>
+					<artifactId>biojava-structure</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.biojava</groupId>
+					<artifactId>biojava-modfinder</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.apache.logging.log4j</groupId>
+					<artifactId>log4j-slf4j-impl</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.apache.logging.log4j</groupId>
+					<artifactId>log4j-api</artifactId>
+				</exclusion>
+				<exclusion>
+					<groupId>org.apache.logging.log4j</groupId>
+					<artifactId>log4j-core</artifactId>
+				</exclusion>
+			</exclusions>
 		</dependency>
 		<dependency>
 			<groupId>graphics.scenery</groupId>
