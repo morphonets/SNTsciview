@@ -31,6 +31,7 @@ import org.jetbrains.annotations.NotNull;
 import org.joml.Vector3f;
 import org.scijava.Context;
 import org.scijava.NullContextException;
+import org.scijava.command.CommandService;
 import org.scijava.plugin.Parameter;
 import org.scijava.util.ColorRGB;
 import org.scijava.util.Colors;
@@ -51,7 +52,8 @@ import java.util.stream.Collectors;
 import java.util.*;
 
 /**
- * Bridges SNT to {@link SciView}, allowing SNT Trees to be rendered as scenery objects
+ * Bridges SNT to {@link SciView}, allowing SNT Trees to be rendered as scenery
+ * objects
  *
  * @author Kyle Harrington
  * @author Tiago Ferreira
@@ -76,7 +78,7 @@ public class SciViewSNT {
 	 * @param context the SciJava application context providing the services
 	 *                required by the class
 	 * @throws NoClassDefFoundError if sciview/scenery are not available
-	 * @throws NullContextException   If context is null
+	 * @throws NullContextException If context is null
 	 */
 	public SciViewSNT(final Context context) throws NoClassDefFoundError {
 		if (!EnableSciViewUpdateSiteCmd.isSciViewAvailable()) {
@@ -84,15 +86,16 @@ public class SciViewSNT {
 			throw new NoClassDefFoundError(
 					"sciview is not available. Please see https://imagej.net/plugins/snt/#installation for details");
 		}
-		if (context == null) throw new NullContextException();
+		if (context == null)
+			throw new NullContextException();
 		context.inject(this);
-		plottedTrees = new TreeMap<String,ShapeTree>();
-        try {
-            sciView = sciViewService.getOrCreateActiveSciView();
-        } catch (final Exception e) {
-            e.printStackTrace();
-        }
-        snt = null;
+		plottedTrees = new TreeMap<String, ShapeTree>();
+		try {
+			sciView = sciViewService.getOrCreateActiveSciView();
+		} catch (final Exception e) {
+			e.printStackTrace();
+		}
+		snt = null;
 	}
 
 	/**
@@ -103,10 +106,11 @@ public class SciViewSNT {
 	 * @throws NullPointerException If sciView is null
 	 */
 	public SciViewSNT(final SciView sciView) {
-		if (sciView == null) throw new NullPointerException();
+		if (sciView == null)
+			throw new NullPointerException();
 		this.sciView = sciView;
 		sciView.getScijavaContext().inject(this);
-		plottedTrees = new TreeMap<String,ShapeTree>();
+		plottedTrees = new TreeMap<String, ShapeTree>();
 		snt = null;
 	}
 
@@ -170,6 +174,7 @@ public class SciViewSNT {
 				public void windowClosing(final WindowEvent e) {
 					nullifySciView();
 				}
+
 				@Override
 				public void windowClosed(final WindowEvent e) {
 					nullifySciView();
@@ -177,12 +182,14 @@ public class SciViewSNT {
 
 			});
 			this.sciView.getFloor().setVisible(false);
-			if (snt != null) syncPathManagerList();
+			if (snt != null)
+				syncPathManagerList();
 		}
 	}
 
 	private void nullifySciView() {
-		if (snt != null && snt.getUI() != null) snt.getUI().setSciViewSNT(null); //FIXME: for refractory after update
+		if (snt != null && snt.getUI() != null)
+			snt.getUI().setSciViewSNT(null); // FIXME: for refractory after update
 		if (sciView != null && !sciView.isClosed()) {
 			sciView.closeWindow();
 		}
@@ -192,16 +199,14 @@ public class SciViewSNT {
 	private String makeUniqueKey(final Map<String, ?> map, final String key) {
 		for (int i = 2; i <= 100; i++) {
 			final String candidate = key + " (" + i + ")";
-			if (!map.containsKey(candidate)) return candidate;
+			if (!map.containsKey(candidate))
+				return candidate;
 		}
 		return key + " (" + UUID.randomUUID() + ")";
 	}
 
-	private String getUniqueLabel(final Map<String, ?> map,
-			final String fallbackPrefix, final String candidate)
-	{
-		final String label = (candidate == null || candidate.trim().isEmpty())
-				? fallbackPrefix : candidate;
+	private String getUniqueLabel(final Map<String, ?> map, final String fallbackPrefix, final String candidate) {
+		final String label = (candidate == null || candidate.trim().isEmpty()) ? fallbackPrefix : candidate;
 		return (map.containsKey(label)) ? makeUniqueKey(map, label) : label;
 	}
 
@@ -221,7 +226,7 @@ public class SciViewSNT {
 		initSciView();
 		final String label = getUniqueLabel(plottedTrees, "Tree ", tree.getLabel());
 		add(tree, label);
-		//sciView.centerOnNode(plottedTrees.get(label));
+		// sciView.centerOnNode(plottedTrees.get(label));
 	}
 
 	/**
@@ -246,9 +251,10 @@ public class SciViewSNT {
 	public boolean removeTree(final Tree tree) {
 		final String treeLabel = getLabel(tree);
 		final ShapeTree shapeTree = plottedTrees.get(treeLabel);
-		if (shapeTree == null) return false;
+		if (shapeTree == null)
+			return false;
 		removeTree(treeLabel);
-		return  plottedTrees.containsKey(treeLabel);
+		return plottedTrees.containsKey(treeLabel);
 	}
 
 	private void add(final Tree tree, final String label) {
@@ -310,7 +316,8 @@ public class SciViewSNT {
 
 	private String getLabel(final Tree tree) {
 		for (final Map.Entry<String, ShapeTree> entry : plottedTrees.entrySet()) {
-			if (entry.getValue().tree == tree) return entry.getKey();
+			if (entry.getValue().tree == tree)
+				return entry.getKey();
 		}
 		return null;
 	}
@@ -320,7 +327,7 @@ public class SciViewSNT {
 		// Every Path in tree has a unique getID()
 		// Node should know this ID for syncing
 		final Integer pathID = (Integer) node.getMetadata().get("pathID");
-		if( pathID != null ) {
+		if (pathID != null) {
 			for (final Path p : tree.list()) {
 				if (p.getID() == pathID) {
 					// Sync the path to the node
@@ -342,11 +349,12 @@ public class SciViewSNT {
 		public ShapeTree(final Tree tree) {
 			super();
 			this.tree = tree;
-			translationReset = new Vector3f(0f,0f,0f);
+			translationReset = new Vector3f(0f, 0f, 0f);
 		}
 
 		public Node get() {
-			if (getChildren().size() == 0) assembleShape();
+			if (getChildren().size() == 0)
+				assembleShape();
 			return this;
 		}
 
@@ -378,8 +386,7 @@ public class SciViewSNT {
 					}
 					if (p.hasNodeColors()) {
 						somaColors.addAll(Arrays.asList(p.getNodeColors()));
-					}
-					else {
+					} else {
 						somaColors.add(p.getColor());
 					}
 					continue;
@@ -391,37 +398,38 @@ public class SciViewSNT {
 				final float scaleFactor = 1f;
 				for (int i = 0; i < p.size(); ++i) {
 					final PointInImage pim = p.getNodeWithoutChecks(i);
-					final Vector3f coord = new Vector3f((float)pim.x, (float)pim.y, (float)pim.z);
+					final Vector3f coord = new Vector3f((float) pim.x, (float) pim.y, (float) pim.z);
 					final Material mat = new DefaultMaterial();
 					final Color c = p.hasNodeColors() ? p.getNodeColor(i) : p.getColor();
 					final ColorRGB color = c == null ? Colors.ANTIQUEWHITE : fromAWTColor(c);
-					mat.setDiffuse(new Vector3f(color.getRed(),color.getGreen(),color.getBlue()));
-					//final float width = Math.max((float) p.getNodeRadius(i), DEF_NODE_RADIUS);
-					//System.out.println( "(point " + i + " " + coord.source() + ")" );
-					points.add( new Vector3f(coord.x()*scaleFactor,coord.y()*scaleFactor,coord.z()*scaleFactor) );
-					colors.add( color );
+					mat.setDiffuse(new Vector3f(color.getRed(), color.getGreen(), color.getBlue()));
+					// final float width = Math.max((float) p.getNodeRadius(i), DEF_NODE_RADIUS);
+					// System.out.println( "(point " + i + " " + coord.source() + ")" );
+					points.add(new Vector3f(coord.x() * scaleFactor, coord.y() * scaleFactor, coord.z() * scaleFactor));
+					colors.add(color);
 				}
 
 				final Line3D line = new Line3D(points, colors, 0.25);
-				line.getMetadata().put("pathID",p.getID());
+				line.getMetadata().put("pathID", p.getID());
 				line.setName(p.getName());
-				//sciView.addNode(line,false );
+				// sciView.addNode(line,false );
 				lines.add(line);
 			}
 
 			// Group all lines
 			if (!lines.isEmpty()) {
-				for( final Node line : lines ) {
-					addChild( line );
-					//sciView.addNode(line, false);
+				for (final Node line : lines) {
+					addChild(line);
+					// sciView.addNode(line, false);
 				}
 			}
 			assembleSoma(somaPoints, somaColors);
-			if (somaSubShape != null) addChild(somaSubShape);
+			if (somaSubShape != null)
+				addChild(somaSubShape);
 
 //			this.setPosition(this.getMaximumBoundingBox().getBoundingSphere().getOrigin());
-			//sciView.setActiveNode(this);
-			//sciView.surroundLighting();
+			// sciView.setActiveNode(this);
+			// sciView.surroundLighting();
 		}
 
 		private boolean validSoma(final Tree tree) {
@@ -431,14 +439,12 @@ public class SciViewSNT {
 			return somas.size() > 0 && somas.size() < 2 && somas.stream().allMatch(path -> path.isPrimary());
 		}
 
-		private void assembleSoma(final List<PointInImage> somaPoints,
-				final List<Color> somaColors)
-		{
-			//ColorRGB col = fromAWTColor(SNTColor.average(somaColors));
-			final ColorRGB col = new ColorRGB(0,255,0);
+		private void assembleSoma(final List<PointInImage> somaPoints, final List<Color> somaColors) {
+			// ColorRGB col = fromAWTColor(SNTColor.average(somaColors));
+			final ColorRGB col = new ColorRGB(0, 255, 0);
 			switch (somaPoints.size()) {
 			case 0:
-				//SNT.log(tree.getLabel() + ": No soma attribute");
+				// SNT.log(tree.getLabel() + ": No soma attribute");
 				somaSubShape = null;
 				return;
 			case 1:
@@ -453,8 +459,12 @@ public class SciViewSNT {
 				final Vector3f p3 = convertPIIToVector3(somaPoints.get(2));
 				final double lengthT1 = p2.sub(p1).length();
 				final double lengthT2 = p1.sub(p3).length();
-				final Node t1 = sciView.addCylinder(p2,DEF_NODE_RADIUS,(float)lengthT1,20, p -> { return null; });
-				final Node t2 = sciView.addCylinder(p1,DEF_NODE_RADIUS,(float)lengthT2,20, p -> { return null; });
+				final Node t1 = sciView.addCylinder(p2, DEF_NODE_RADIUS, (float) lengthT1, 20, p -> {
+					return null;
+				});
+				final Node t2 = sciView.addCylinder(p1, DEF_NODE_RADIUS, (float) lengthT2, 20, p -> {
+					return null;
+				});
 				addChild(t1);
 				addChild(t2);
 				return;
@@ -467,24 +477,23 @@ public class SciViewSNT {
 		}
 
 		private Vector3f convertPIIToVector3(final PointInImage sCenter) {
-			return new Vector3f((float)sCenter.x, (float)sCenter.y, (float)sCenter.z);
+			return new Vector3f((float) sCenter.x, (float) sCenter.y, (float) sCenter.z);
 		}
 
 		private ColorRGB fromAWTColor(final Color average) {
-			return new ColorRGB(average.getRed(),average.getGreen(),average.getBlue());
+			return new ColorRGB(average.getRed(), average.getGreen(), average.getBlue());
 		}
 
 		/**
-		 * Generates an [OrientedBoundingBox] for this [Node]. This will take
-		 * geometry information into consideration if this Node implements [HasGeometry].
-		 * In case a bounding box cannot be determined, the function will return null.
+		 * Generates an [OrientedBoundingBox] for this [Node]. This will take geometry
+		 * information into consideration if this Node implements [HasGeometry]. In case
+		 * a bounding box cannot be determined, the function will return null.
 		 */
 		public OrientedBoundingBox generateBoundingBox() {
-			OrientedBoundingBox bb = new OrientedBoundingBox(this, 0.0f, 0.0f, 0.0f,
-					0.0f, 0.0f, 0.0f);
-			for( final Node n : getChildren() ) {
+			OrientedBoundingBox bb = new OrientedBoundingBox(this, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f, 0.0f);
+			for (final Node n : getChildren()) {
 				final OrientedBoundingBox cBB = n.generateBoundingBox();
-				if( cBB != null )
+				if (cBB != null)
 					bb = bb.expand(bb, cBB);
 			}
 			return bb;
@@ -493,19 +502,17 @@ public class SciViewSNT {
 		@NotNull
 		@Override
 		public String getName() {
-			return "ShapeTree";
+			return tree.getLabel();
 		}
 	}
 
 	/* IDE debug method */
-	public static void main(final String[] args) throws InterruptedException {
-		SceneryBase.xinitThreads();
-		final ImageJ ij = new ImageJ();
-		ij.ui().showUI();
-		final SNTService sntService = ij.context().getService(SNTService.class);
+	public static void main(final String[] args) throws Exception {
+		final SciView sv = SciView.create();
+		final SNTService sntService = sv.getScijavaContext().getService(SNTService.class);
 		final SciViewSNT sciViewSNT = (SciViewSNT) sntService.getOrCreateSciViewSNT();
 		final Tree tree = sntService.demoTree("fractal");
 		tree.setColor(Colors.RED);
-		sciViewSNT.add(tree, tree.getLabel());
+		sciViewSNT.addTree(tree);
 	}
 }
